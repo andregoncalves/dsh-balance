@@ -2,6 +2,7 @@
 
 [![npm package](https://img.shields.io/badge/npm-%40andrecgoncalves%2Fdsh--balance-cb3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/@andrecgoncalves/dsh-balance)
 [![GitHub release](https://img.shields.io/github/v/release/andregoncalves/dsh-balance?sort=semver&color=4D6BFE)](https://github.com/andregoncalves/dsh-balance/releases)
+[![CI](https://github.com/andregoncalves/dsh-balance/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/andregoncalves/dsh-balance/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-3da639.svg)](LICENSE)
 [![node >= 22.18](https://img.shields.io/badge/node-%E2%89%A5%2022.18-43853d?logo=node.js&logoColor=white)](https://nodejs.org)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE)](https://github.com/deepseek-ai/deepseek-harness)
