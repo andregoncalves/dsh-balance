@@ -1,0 +1,189 @@
+# dsh-balance
+
+[![npm package](https://img.shields.io/badge/npm-%40andregoncalves%2Fdsh--balance-cb3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/@andregoncalves/dsh-balance)
+[![license: MIT](https://img.shields.io/badge/license-MIT-3da639.svg)](LICENSE)
+[![node >= 22.18](https://img.shields.io/badge/node-%E2%89%A5%2022.18-43853d?logo=node.js&logoColor=white)](https://nodejs.org)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE)](https://github.com/deepseek-ai/deepseek-harness)
+
+**English** | [中文](README.zh.md)
+
+A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugin that puts the **account balance of the provider serving your active model** in the sidebar foot — right-aligned next to the Settings button — and keeps it fresh.
+
+The chip is **provider-aware**: it reads the active session's selected model and shows the matching provider's balance, flipping automatically when you switch models.
+
+<p align="center">
+  <img src="assets/providers.png" alt="The balance chip rendered for DeepSeek, OpenRouter, Moonshot/Kimi, Zhipu/GLM, and MiniMax" width="720">
+</p>
+
+## Highlights
+
+- **One chip, five providers.** DeepSeek, OpenRouter, Moonshot/Kimi, Zhipu/GLM (Z.ai), and MiniMax — each with its own brand mark, currency, and tooltip breakdown.
+- **Provider-aware.** Switching the active model switches the chip to that provider's balance immediately.
+- **Your key never reaches the browser.** The host half resolves the credential and calls the provider; the browser only ever sees a normalized balance.
+- **Live.** Auto-refreshes every 60 seconds, on click, when the session changes, and the moment the model's provider changes.
+- **Graceful.** A missing key or an upstream error becomes a muted `Balance —` pill with the reason in the tooltip — never a broken layout.
+- **Preview without an account.** A built-in mock mode renders real-looking balances for any provider.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/sidebar-light.png" alt="Light theme sidebar with the balance chip in the footer" width="260"></td>
+    <td align="center"><img src="assets/sidebar-dark.png" alt="Dark theme sidebar with the balance chip in the footer" width="260"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Light theme</sub></td>
+    <td align="center"><sub>Dark theme</sub></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="assets/footer.png" alt="The sidebar footer: Settings on the left, the balance chip on the right" width="420">
+</p>
+
+## Supported providers
+
+| Active model route | Balance shown | Source |
+|---|---|---|
+| `deepseek`, `deepseek-official` | DeepSeek account balance (native currency) | `api.deepseek.com/user/balance` |
+| `openrouter` | Remaining credits (`total_credits − total_usage`, USD) | `openrouter.ai/api/v1/credits` |
+| `moonshotai`, `moonshotai-cn` | Available balance (USD, cash + voucher) | `api.moonshot.ai` / `api.moonshot.cn` `/v1/users/me/balance` |
+| `zai`, `zai-coding-cn`, `zhipu` | Account balance (CNY by default) | `open.bigmodel.cn` / `api.z.ai` account report |
+| `minimax`, `minimax-cn` | Token-plan remaining quota (count or %) | `minimax.io` / `api.minimaxi.com` `/v1/token_plan/remains` |
+| anything else | DeepSeek balance | same as the `deepseek` row |
+
+The mapping is deliberately narrow: a route the plugin does not recognize (including a custom provider id) falls back to the DeepSeek balance rather than failing the chip.
+
+### What the chip shows
+
+- **`[brand mark] $9.74 ●`** — the provider's logo, the amount, then a status dot.
+- **Status dot** — DeepSeek marks its peak/off-peak billing window (green = off-peak, red = peak; peak hours are **01:00–04:00** and **06:00–10:00 UTC**). OpenRouter, Moonshot, Zhipu, and MiniMax mark a positive remaining balance or quota (green = left, red = exhausted).
+- **Tooltip** — the full breakdown (for example `Total $42.50 · Granted $5.00 · Topped up $37.50`).
+- **Click** — refresh now.
+- **Errors** — a muted `Balance —` pill; hover for the reason, click to retry.
+- The collapsed 56px sidebar rail hides the chip — there is no room beside the gear.
+
+## Install
+
+Requirements: a working DeepSeek Harness install (`dsh web`) and Node.js ≥ 22.18.
+
+### From npm
+
+```sh
+pnpm dsh plugin --profile web add @andregoncalves/dsh-balance
+```
+
+### From GitHub
+
+```sh
+pnpm dsh plugin --profile web add github:andregoncalves/dsh-balance
+```
+
+The package builds itself on install (`prepare` → `pnpm run build`), so `lib/` does not need to be committed.
+
+### From a local clone (development)
+
+```sh
+git clone https://github.com/andregoncalves/dsh-balance.git
+cd dsh-balance
+pnpm install
+pnpm run build
+pnpm dsh plugin --profile web add link:"$PWD"
+```
+
+Use `link:` rather than `file:`: a plain `file:` dependency is hardlinked and breaks on atomic rebuilds.
+
+### Enable the row
+
+Add the plugin to the profile patch layer, `~/.dsh/profiles/web/cordis.patch.yml`:
+
+```yaml
+- insert:
+    - id: dsh-balance
+      name: "@andregoncalves/dsh-balance"
+```
+
+The `id` is the plugin's internal Cordis name and stays `dsh-balance`; the `name` is the installed package. Refresh the browser once after the first install so the boot manifest (`window.__DSH_BOOT__`) picks up the new row. After that, source changes rebuild and hot-swap live.
+
+### Verify
+
+```sh
+curl http://127.0.0.1:3080/plugins/balance                    # DeepSeek
+curl "http://127.0.0.1:3080/plugins/balance?kind=openrouter"  # OpenRouter
+curl "http://127.0.0.1:3080/plugins/balance?kind=moonshot"    # Moonshot / Kimi
+curl "http://127.0.0.1:3080/plugins/balance?kind=zhipu"       # Zhipu / GLM
+curl "http://127.0.0.1:3080/plugins/balance?kind=minimax"     # MiniMax
+```
+
+Each returns `{"ok":true,"provider":"…","balance":{…}}`, or `{"ok":false,"error":"no-key","message":"…"}` when the credential is missing.
+
+## Configuration
+
+DeepSeek resolves `DEEPSEEK_API_KEY` through the Harness **credentials seam** (for example `~/.dsh/.credentials.yaml`). The other providers try the seam first, then fall back to the ambient launch environment (process, the invoking project's `.env`, then the Harness home's `.env`).
+
+| Provider | Credential names tried, in order |
+|---|---|
+| DeepSeek | `DEEPSEEK_API_KEY` |
+| OpenRouter | `OPENROUTER_API_KEY` |
+| Moonshot / Kimi | `MOONSHOT_API_KEY` |
+| Zhipu / GLM | `ZAI_API_KEY`, `GLM_API_KEY`, `ZHIPU_API_KEY` |
+| MiniMax | `MINIMAX_API_KEY`, `MINIMAX_CN_API_KEY`, `MINIMAX_API_TOKEN` |
+
+To share one credential plane with the model adapter, store the key in `~/.dsh/.credentials.yaml` and add `apiKeyEnv` to the route. Zhipu's account endpoints expect the key verbatim (no `Bearer` prefix); the host applies the right scheme automatically. Moonshot and Zhipu mirror across two regional hosts, so a key valid on only one site falls through to the other before the request is reported as failed.
+
+## Preview without an account (mock mode)
+
+Mock mode serves canned balances from the host and skips credential resolution and the upstream call. It is off by default and enabled with `DSH_BALANCE_MOCK=1` or a `?mock=1` query parameter.
+
+```sh
+curl "http://127.0.0.1:3080/plugins/balance?kind=moonshot&mock=1"
+curl "http://127.0.0.1:3080/plugins/balance?kind=zhipu&mock=1"
+curl "http://127.0.0.1:3080/plugins/balance?kind=minimax&mock=1"
+```
+
+To see it in the GUI, start the server with the environment variable:
+
+```sh
+DSH_BALANCE_MOCK=1 dsh web
+```
+
+Then add a route in **Settings → Models** for the provider you want to preview (`moonshotai`, `zai`, `minimax`, …), add a model, and select it. The chip follows the active model and shows the canned balance with no real key. Mock mode never reads a credential and never contacts a provider — its numbers are for layout preview only.
+
+## How it works
+
+`dsh-balance` is a **dual-face Cordis package**: one npm package with a host half and a browser half.
+
+| Half | File | Job |
+|---|---|---|
+| Host (Node) | `src/index.ts` | Registers `GET /plugins/balance?kind=…` on the host web server. Resolves the key through the credentials seam (and the launch environment for the added providers), calls the provider, and relays a normalized balance. **The key never crosses the wire to the browser.** |
+| Browser | `src/client/index.tsx` | Registers the `BalanceChip` component into the `sidebar.footer.action` slot. Reads the active session's model provider through the session API, maps it to a `kind`, and polls the host route every 60s, on click, on session change, and on model switch. Each provider's payload is shaped by its own renderer. |
+
+The browser bundle is served by the host's client-module pipeline in the `window.__ModuleLoader__.load({ id, factory })` closure format the web shell consumes; `react` and the `@deepseek-ai/*` platform modules stay external and resolve from the browser's frozen module table.
+
+> **Forking note.** The client-module entry id is the **npm package name**. The build reads it from `package.json` (`tsdown.config.ts`), and `scripts/verify-client.mjs` asserts the same value. If you rename the package, the profile patch row's `name` must match — the plugin's internal Cordis `name` export stays `dsh-balance`.
+
+## Development
+
+```sh
+pnpm install
+pnpm run build     # tsdown: lib/index.js (host) + lib/client.js (browser)
+pnpm run verify    # evaluates the client bundle against a stubbed module table
+```
+
+With a `link:` install, rebuilding `lib/` updates the running app immediately, including a live hot-swap of the chip in an open browser tab. Host-side changes may need a reload or restart depending on your DSH workflow.
+
+The `@deepseek-ai/*` platform packages are **optional peer dependencies** supplied by the running Harness, so they are never fetched during `pnpm install` (see `pnpm-workspace.yaml`). TypeScript type-checking therefore requires a Harness checkout on your `tsconfig` paths; the build itself has no such requirement.
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| `Balance —` with `Set DEEPSEEK_API_KEY …` | The credential is not resolvable. Store it in `~/.dsh/.credentials.yaml` or the launch environment. |
+| Chip shows the DeepSeek balance on another provider | The route id is not in the mapping above — open an issue with the route id. |
+| Chip missing after renaming the package | The client-module id is the package name; make sure the profile patch row's `name` matches `package.json`, then restart `dsh web`. |
+| Chip missing in the collapsed rail | Expected — the 56px rail has no room beside the gear. |
+| Upstream `401`/`403` on Moonshot or Zhipu | The key belongs to the other regional host; the plugin already tries the mirror, so a persistent error means the key is invalid on both. |
+
+## License
+
+[MIT](LICENSE) © 2026 Andre Goncalves

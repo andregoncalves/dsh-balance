@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Build output (rebuilt by `prepack`)
+lib/
+
+# Local packaging artifacts
+*.tgz
+
+# macOS
+.DS_Store
+
+# Internal release notes (kept locally, never published)
+PUBLISHING.md

@@ -1,0 +1,120 @@
+{
+  "name": "@andregoncalves/dsh-balance",
+  "version": "0.4.0",
+  "description": "Provider-aware account balance chip for the DeepSeek Harness web sidebar: DeepSeek, OpenRouter, Moonshot/Kimi, Zhipu/GLM, and MiniMax.",
+  "license": "MIT",
+  "author": {
+    "name": "Andre Goncalves",
+    "url": "https://github.com/andregoncalves"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andregoncalves/dsh-balance.git"
+  },
+  "homepage": "https://github.com/andregoncalves/dsh-balance#readme",
+  "bugs": {
+    "url": "https://github.com/andregoncalves/dsh-balance/issues"
+  },
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "plugin",
+    "balance",
+    "openrouter",
+    "moonshot",
+    "kimi",
+    "zhipu",
+    "glm",
+    "minimax"
+  ],
+  "type": "module",
+  "main": "./lib/index.js",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "files": [
+    "lib",
+    "src",
+    "scripts",
+    "assets",
+    "tsconfig.json",
+    "tsdown.config.ts",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./src/client/index.tsx",
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ],
+      "immediately": false
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "prepare": "pnpm run build",
+    "prepack": "pnpm run build",
+    "verify": "node scripts/verify-client.mjs"
+  },
+  "devDependencies": {
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-api-remotes": "*",
+    "@deepseek-ai/dsh-client-runtime": "*",
+    "@deepseek-ai/dsh-client-ui-sidebar": "*",
+    "@deepseek-ai/dsh-client-ui-slots": "*",
+    "@deepseek-ai/dsh-credentials": "*",
+    "@deepseek-ai/dsh-host-webserver": "*",
+    "@deepseek-ai/dsh-launch-environment": "*",
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-api-remotes": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-client-runtime": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-client-ui-sidebar": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-client-ui-slots": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-credentials": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-host-webserver": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-launch-environment": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  }
+}
