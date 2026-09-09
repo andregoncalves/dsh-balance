@@ -1,0 +1,10 @@
+# dsh-balance bundle layer.
+#
+# Applied when a profile lists this package in `dsh.profile.bundles` — which
+# `dsh plugin --profile web add @andregoncalves/dsh-balance` does automatically
+# because package.json declares `dsh.bundle`. The row references the package by
+# name so Node resolution finds the installed code; the plugin's internal
+# Cordis name stays `dsh-balance`.
+- insert:
+    - id: dsh-balance
+      name: "@andregoncalves/dsh-balance"

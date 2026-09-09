@@ -133,9 +133,20 @@ pnpm dsh plugin --profile web add link:"$PWD"
 
 请使用 `link:` 而不是 `file:`：普通 `file:` 依赖使用硬链接，在原子化重建时会失效。
 
-### 启用该行
+### 这一行是如何接入的
 
-在 profile 补丁层 `~/.dsh/profiles/web/cordis.patch.yml` 中加入：
+本包声明了 **`dsh.bundle`**，因此 `dsh plugin add` 会自动把它追加到 profile 的 `dsh.profile.bundles`，并由包内自带的 `cordis.patch.yml` 插入侧边栏那一行——**无需手动修改补丁文件**。首次安装后刷新一次浏览器，让启动清单（`window.__DSH_BOOT__`）识别新增的行；之后源码改动会重建并热替换。
+
+<details>
+<summary>手动管理 profile（或使用忽略 <code>dsh.bundle</code> 的旧版 <code>dsh</code>）</summary>
+
+把该 bundle 加入 `~/.dsh/profiles/web/package.json`：
+
+```json
+"dsh": { "profile": { "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "@andregoncalves/dsh-balance"] } }
+```
+
+bundle 的补丁随后会插入该行。如果你更希望把它当作普通依赖，可以不走 `dsh.bundle`，而是自己在 `~/.dsh/profiles/web/cordis.patch.yml` 中加入：
 
 ```yaml
 - insert:
@@ -143,7 +154,9 @@ pnpm dsh plugin --profile web add link:"$PWD"
       name: "@andregoncalves/dsh-balance"
 ```
 
-`id` 是插件内部的 Cordis 名称，保持 `dsh-balance` 不变；`name` 是已安装的包名。首次安装后刷新一次浏览器，让启动清单（`window.__DSH_BOOT__`）识别新增的行；之后源码改动会重建并热替换。
+两种方式中，`id` 都是插件内部的 Cordis 名称，保持 `dsh-balance` 不变；`name` 是已安装的包名。
+
+</details>
 
 ### 验证
 
@@ -195,12 +208,13 @@ DSH_BALANCE_MOCK=1 dsh web
 
 | 部分 | 文件 | 职责 |
 |---|---|---|
+| Bundle 层 | `cordis.patch.yml` | 由 `dsh.bundle` 声明；当 profile 列出本包时插入 `dsh-balance` 行，因此 `dsh plugin add` 无需手动修改补丁文件。 |
 | 宿主端（Node） | `src/index.ts` | 在宿主 Web 服务器上注册 `GET /plugins/balance?kind=…`。通过凭证接缝（以及新增服务商的启动环境）解析密钥，请求服务商，并转发归一化后的余额。**密钥不会经过网络传到浏览器。** |
 | 浏览器端 | `src/client/index.tsx` | 将 `BalanceChip` 组件注册到 `sidebar.footer.action` 插槽。通过会话 API 读取当前会话的模型服务商，映射为 `kind`，并每 60 秒、点击时、会话切换时、模型切换时轮询宿主路由。每种服务的返回数据由各自的渲染器整形。 |
 
 浏览器端产物由宿主的 client-module 流水线以 Web 外壳所需的 `window.__ModuleLoader__.load({ id, factory })` 闭包格式提供；`react` 与 `@deepseek-ai/*` 平台模块保持外部依赖，从浏览器冻结的模块表中解析。
 
-> **Fork 提示。** client-module 的条目 id 就是 **npm 包名**。构建时会从 `package.json` 读取（见 `tsdown.config.ts`），`scripts/verify-client.mjs` 也会校验同一个值。若你重命名该包，profile 补丁行的 `name` 必须同步；插件内部的 Cordis `name` 导出始终是 `dsh-balance`。
+> **Fork 提示。** client-module 的条目 id 就是 **npm 包名**。构建时会从 `package.json` 读取（见 `tsdown.config.ts`），`scripts/verify-client.mjs` 也会校验同一个值。若你重命名该包，还需同步 `cordis.patch.yml` 中的 `name` 以及 profile `dsh.profile.bundles` 中的条目；插件内部的 Cordis `name` 导出始终是 `dsh-balance`。
 
 ## 开发
 
@@ -220,7 +234,7 @@ pnpm run verify    # 在桩模块表上执行客户端产物并校验契约
 |---|---|
 | 显示 `Balance —` 且提示 `Set DEEPSEEK_API_KEY …` | 凭证无法解析。请写入 `~/.dsh/.credentials.yaml` 或启动环境。 |
 | 其他服务商却显示 DeepSeek 余额 | 该路由 id 不在上面的映射表中——请带上路由 id 提交 issue。 |
-| 重命名包之后胶囊消失 | client-module 的 id 就是包名；请确认 profile 补丁行的 `name` 与 `package.json` 一致，然后重启 `dsh web`。 |
+| 重命名包之后胶囊消失 | client-module 的 id 就是包名；请确认 `cordis.patch.yml` 中的行与 `dsh.profile.bundles` 中的条目都与 `package.json` 一致，然后重启 `dsh web`。 |
 | 折叠侧边栏后胶囊消失 | 正常现象——56px 轨道中齿轮旁没有空间。 |
 | Moonshot 或 Zhipu 返回上游 `401`/`403` | 密钥属于另一个区域主机；插件已尝试镜像站点，若仍报错说明该密钥在两个站点都无效。 |
 

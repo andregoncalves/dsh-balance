@@ -40,6 +40,7 @@
     "src",
     "scripts",
     "assets",
+    "cordis.patch.yml",
     "tsconfig.json",
     "tsdown.config.ts",
     "README.md",
@@ -58,6 +59,9 @@
     "./package.json": "./package.json"
   },
   "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
       "inject": [

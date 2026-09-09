@@ -133,9 +133,20 @@ pnpm dsh plugin --profile web add link:"$PWD"
 
 Use `link:` rather than `file:`: a plain `file:` dependency is hardlinked and breaks on atomic rebuilds.
 
-### Enable the row
+### How the row is wired
 
-Add the plugin to the profile patch layer, `~/.dsh/profiles/web/cordis.patch.yml`:
+The package declares **`dsh.bundle`**, so `dsh plugin add` appends it to your profile's `dsh.profile.bundles` and the bundle's own `cordis.patch.yml` inserts the sidebar row — **no manual patch editing**. Refresh the browser once after the first install so the boot manifest (`window.__DSH_BOOT__`) picks up the new row; after that, source changes rebuild and hot-swap live.
+
+<details>
+<summary>Managing the profile by hand (or an older <code>dsh</code> that ignores <code>dsh.bundle</code>)</summary>
+
+Add the bundle to `~/.dsh/profiles/web/package.json`:
+
+```json
+"dsh": { "profile": { "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "@andregoncalves/dsh-balance"] } }
+```
+
+The bundle's patch then inserts the row. If you prefer a plain dependency instead, drop the `dsh.bundle` handling and add the row yourself to `~/.dsh/profiles/web/cordis.patch.yml`:
 
 ```yaml
 - insert:
@@ -143,7 +154,9 @@ Add the plugin to the profile patch layer, `~/.dsh/profiles/web/cordis.patch.yml
       name: "@andregoncalves/dsh-balance"
 ```
 
-The `id` is the plugin's internal Cordis name and stays `dsh-balance`; the `name` is the installed package. Refresh the browser once after the first install so the boot manifest (`window.__DSH_BOOT__`) picks up the new row. After that, source changes rebuild and hot-swap live.
+Either way the `id` is the plugin's internal Cordis name and stays `dsh-balance`; the `name` is the installed package.
+
+</details>
 
 ### Verify
 
@@ -193,14 +206,15 @@ Then add a route in **Settings → Models** for the provider you want to preview
 
 `dsh-balance` is a **dual-face Cordis package**: one npm package with a host half and a browser half.
 
-| Half | File | Job |
+| Part | File | Job |
 |---|---|---|
+| Bundle layer | `cordis.patch.yml` | Declared by `dsh.bundle`; inserts the `dsh-balance` row when a profile lists the package, so `dsh plugin add` needs no manual patch editing. |
 | Host (Node) | `src/index.ts` | Registers `GET /plugins/balance?kind=…` on the host web server. Resolves the key through the credentials seam (and the launch environment for the added providers), calls the provider, and relays a normalized balance. **The key never crosses the wire to the browser.** |
 | Browser | `src/client/index.tsx` | Registers the `BalanceChip` component into the `sidebar.footer.action` slot. Reads the active session's model provider through the session API, maps it to a `kind`, and polls the host route every 60s, on click, on session change, and on model switch. Each provider's payload is shaped by its own renderer. |
 
 The browser bundle is served by the host's client-module pipeline in the `window.__ModuleLoader__.load({ id, factory })` closure format the web shell consumes; `react` and the `@deepseek-ai/*` platform modules stay external and resolve from the browser's frozen module table.
 
-> **Forking note.** The client-module entry id is the **npm package name**. The build reads it from `package.json` (`tsdown.config.ts`), and `scripts/verify-client.mjs` asserts the same value. If you rename the package, the profile patch row's `name` must match — the plugin's internal Cordis `name` export stays `dsh-balance`.
+> **Forking note.** The client-module entry id is the **npm package name**. The build reads it from `package.json` (`tsdown.config.ts`), and `scripts/verify-client.mjs` asserts the same value. If you rename the package, update the `name` in `cordis.patch.yml` and the entry in the profile's `dsh.profile.bundles` too — the plugin's internal Cordis `name` export stays `dsh-balance`.
 
 ## Development
 
@@ -220,7 +234,7 @@ The `@deepseek-ai/*` platform packages are **optional peer dependencies** suppli
 |---|---|
 | `Balance —` with `Set DEEPSEEK_API_KEY …` | The credential is not resolvable. Store it in `~/.dsh/.credentials.yaml` or the launch environment. |
 | Chip shows the DeepSeek balance on another provider | The route id is not in the mapping above — open an issue with the route id. |
-| Chip missing after renaming the package | The client-module id is the package name; make sure the profile patch row's `name` matches `package.json`, then restart `dsh web`. |
+| Chip missing after renaming the package | The client-module id is the package name; make sure the `cordis.patch.yml` row and the `dsh.profile.bundles` entry match `package.json`, then restart `dsh web`. |
 | Chip missing in the collapsed rail | Expected — the 56px rail has no room beside the gear. |
 | Upstream `401`/`403` on Moonshot or Zhipu | The key belongs to the other regional host; the plugin already tries the mirror, so a persistent error means the key is invalid on both. |
 
