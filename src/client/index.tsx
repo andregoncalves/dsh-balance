@@ -173,12 +173,18 @@ function currencySymbol(currency: string): string {
 }
 
 /**
- * DeepSeek peak/off-peak billing: peak hours are 01:00–04:00 and 06:00–10:00
- * UTC; every other hour is off-peak (off-peak rates are half of peak rates).
+ * DeepSeek peak/off-peak billing (official footnote:
+ * https://api-docs.deepseek.com/quick_start/pricing). Peak is **Monday–Friday**,
+ * Beijing time (UTC+8) 09:00–12:00 and 14:00–18:00 — which is 01:00–04:00 and
+ * 06:00–10:00 UTC on the same day. Every other hour, including the whole
+ * weekend, is off-peak (half the peak price). Both peak windows fall inside the
+ * same UTC day as their Beijing weekday, so the weekend check uses the UTC day.
  * @param now - the instant to classify (defaults to now).
  * @returns whether the instant falls inside a peak window.
  */
-function isPeakHour(now: Date = new Date()): boolean {
+export function isPeakHour(now: Date = new Date()): boolean {
+  const day = now.getUTCDay()
+  if (day === 0 || day === 6) return false // Saturday/Sunday are off-peak all day
   const hour = now.getUTCHours()
   return (hour >= 1 && hour < 4) || (hour >= 6 && hour < 10)
 }
@@ -216,7 +222,9 @@ function renderDeepSeek(data: BalanceResponse): DisplayState {
   const symbol = currencySymbol(info.currency)
   const breakdown = `Total ${symbol}${info.total_balance} · Granted ${symbol}${info.granted_balance} · Topped up ${symbol}${info.topped_up_balance}`
   const peak = isPeakHour()
-  const windowLabel = peak ? 'Peak (01:00–04:00, 06:00–10:00 UTC)' : 'Off-peak (all other hours)'
+  const windowLabel = peak
+    ? 'Peak · Mon–Fri 09:00–12:00, 14:00–18:00 Beijing (01:00–04:00, 06:00–10:00 UTC)'
+    : 'Off-peak · 50% of the peak price'
   return {
     kind: 'ok',
     provider: 'deepseek',

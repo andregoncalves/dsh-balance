@@ -22,6 +22,7 @@ The chip is **provider-aware**: it reads the active session's selected model and
 - [Highlights](#highlights)
 - [Screenshots](#screenshots)
 - [Supported providers](#supported-providers)
+  - [DeepSeek peak / off-peak hours](#deepseek-peak--off-peak-hours)
 - [Install](#install)
 - [Configuration](#configuration)
 - [Preview without an account (mock mode)](#preview-without-an-account-mock-mode)
@@ -64,6 +65,12 @@ The chip is **provider-aware**: it reads the active session's selected model and
 
 ## Screenshots
 
+<p>
+  <img src="assets/footer.png" alt="The sidebar footer: Settings on the left, the balance chip on the right" width="420">
+</p>
+
+<hr>
+
 <table>
   <tr>
     <td align="center"><img src="assets/sidebar-light.png" alt="Light theme sidebar with the balance chip in the footer" width="260"></td>
@@ -75,9 +82,6 @@ The chip is **provider-aware**: it reads the active session's selected model and
   </tr>
 </table>
 
-<p align="center">
-  <img src="assets/footer.png" alt="The sidebar footer: Settings on the left, the balance chip on the right" width="420">
-</p>
 
 ## Supported providers
 
@@ -95,11 +99,22 @@ The mapping is deliberately narrow: a route the plugin does not recognize (inclu
 ### What the chip shows
 
 - **`[brand mark] $9.74 ●`** — the provider's logo, the amount, then a status dot.
-- **Status dot** — DeepSeek marks its peak/off-peak billing window (green = off-peak, red = peak; peak hours are **01:00–04:00** and **06:00–10:00 UTC**). OpenRouter, Moonshot, Zhipu, and MiniMax mark a positive remaining balance or quota (green = left, red = exhausted).
+- **Status dot** — DeepSeek marks its peak/off-peak billing window (green = off-peak, red = peak; see [DeepSeek peak / off-peak hours](#deepseek-peak--off-peak-hours)). OpenRouter, Moonshot, Zhipu, and MiniMax mark a positive remaining balance or quota (green = left, red = exhausted).
 - **Tooltip** — the full breakdown (for example `Total $42.50 · Granted $5.00 · Topped up $37.50`).
 - **Click** — refresh now.
 - **Errors** — a muted `Balance —` pill; hover for the reason, click to retry.
 - The collapsed 56px sidebar rail hides the chip — there is no room beside the gear.
+
+### DeepSeek peak / off-peak hours
+
+DeepSeek bills **off-peak requests at half the peak price**. The chip's status dot reflects the current window, evaluated in UTC so it is correct regardless of your machine's timezone:
+
+| Window | When |
+|---|---|
+| **Peak** — red dot | **Monday–Friday**, Beijing time (UTC+8) **09:00–12:00** and **14:00–18:00** — i.e. **01:00–04:00** and **06:00–10:00 UTC** |
+| **Off-peak** — green dot | Every other hour, **including the whole weekend**, at 50% of the peak price |
+
+Source: [DeepSeek API — Models & Pricing](https://api-docs.deepseek.com/quick_start/pricing), footnote (1): *"Off-peak prices are half of the peak prices. Peak hours are Beijing time Monday to Friday 9:00–12:00 and 14:00–18:00 (all other times are off-peak)."*
 
 ## Install
 
