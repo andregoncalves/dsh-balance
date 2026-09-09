@@ -15,6 +15,44 @@
   <img src="assets/providers.png" alt="余额胶囊在 DeepSeek、OpenRouter、Moonshot/Kimi、Zhipu/GLM 和 MiniMax 下的渲染效果" width="720">
 </p>
 
+## 目录
+
+- [为什么选择 dsh-balance？](#为什么选择-dsh-balance)
+- [轻量设计](#轻量设计)
+- [亮点](#亮点)
+- [截图](#截图)
+- [支持的服务商](#支持的服务商)
+- [安装](#安装)
+- [配置](#配置)
+- [无需账号预览（mock 模式）](#无需账号预览mock-模式)
+- [实现原理](#实现原理)
+- [开发](#开发)
+- [故障排查](#故障排查)
+- [常见问答](#常见问答)
+- [许可证](#许可证)
+
+## 为什么选择 dsh-balance？
+
+- **感知服务商，不止 DeepSeek。** 它会跟随**当前活跃模型所属的服务商**，覆盖 DeepSeek、OpenRouter、Moonshot/Kimi、Zhipu/GLM 与 MiniMax——切换模型时胶囊立即切换。
+- **只做一件事的最小实现。** 没有设置面板、没有费用估算、没有额外服务。一条路由，一个胶囊，gzip 后约 11 kB。
+- **对核心零侵入。** 一个树外包，注册到已声明的插槽，不会修改或 fork Harness 源码中的任何文件。
+
+## 轻量设计
+
+`dsh-balance` 刻意保持极简，不给 Harness 增加任何机制：
+
+| | |
+|---|---|
+| **运行时依赖** | **零** —— `dependencies: {}`；唯一的 import 是 `@deepseek-ai/*` 平台模块与 React，均由运行中的 Harness 以可选 peer 提供 |
+| **产物体积** | 宿主端 **约 8 kB**（gzip 3.1 kB）+ 浏览器端 **约 23 kB**（gzip 8.1 kB）→ **gzip 合计约 11 kB** |
+| **Harness 接触面** | **一条**精确路由（`GET /plugins/balance`）与已声明 `sidebar.footer.action` 插槽中的**一个**组件 |
+| **核心补丁** | **无** —— 不 fork 文件、不修补核心 CSS；插件只从自己的 DOM 锚点设置自己那一行底栏的样式 |
+| **后台任务** | 无 —— 没有数据库、没有 worker、没有遥测、没有全局状态；每个胶囊只有一个 `setInterval`，卸载时清除 |
+| **生命周期** | 路由通过 `ctx.effect` 注册，卸载时自动回收；模型目录订阅会取消订阅；卸载插件后不会留下任何残留 |
+| **故障隔离** | 缺少密钥或上游出错时降级为灰色胶囊，绝不会阻塞会话或界面 |
+
+> **无需配置，也无需清理。** 安装后唯一的变化是侧边栏底部多了一行；卸载后 Harness 与原来完全一致。
+
 ## 亮点
 
 - **一个胶囊，五家服务商。** DeepSeek、OpenRouter、Moonshot/Kimi、Zhipu/GLM（Z.ai）与 MiniMax——各自带有品牌图标、货币单位与悬停明细。
@@ -65,7 +103,9 @@
 
 ## 安装
 
-前置条件：可正常运行的 DeepSeek Harness（`dsh web`）以及 Node.js ≥ 22.18。
+前置条件：带有 web profile 的 DeepSeek Harness（`dsh web`）以及 Node.js ≥ 22.18。
+
+> 插件是自包含的：不需要额外服务、不需要配置文件、不需要核心补丁。安装只会新增一个依赖和侧边栏中的一行。
 
 ### 从 npm 安装
 
@@ -174,7 +214,7 @@ pnpm run verify    # 在桩模块表上执行客户端产物并校验契约
 
 `@deepseek-ai/*` 平台包是**可选的 peer 依赖**，由正在运行的 Harness 提供，因此 `pnpm install` 永远不会去下载它们（见 `pnpm-workspace.yaml`）。因此 TypeScript 类型检查需要本机的 Harness 检出并配置 `tsconfig` 路径；构建本身没有这个要求。
 
-## 常见问题
+## 故障排查
 
 | 现象 | 原因与处理 |
 |---|---|
@@ -183,6 +223,18 @@ pnpm run verify    # 在桩模块表上执行客户端产物并校验契约
 | 重命名包之后胶囊消失 | client-module 的 id 就是包名；请确认 profile 补丁行的 `name` 与 `package.json` 一致，然后重启 `dsh web`。 |
 | 折叠侧边栏后胶囊消失 | 正常现象——56px 轨道中齿轮旁没有空间。 |
 | Moonshot 或 Zhipu 返回上游 `401`/`403` | 密钥属于另一个区域主机；插件已尝试镜像站点，若仍报错说明该密钥在两个站点都无效。 |
+
+## 常见问答
+
+**浏览器会看到我的 API 密钥吗？** 不会。宿主端通过 Harness 的凭证接缝解析密钥并请求服务商，浏览器只会收到归一化后的余额。
+
+**卸载后会影响 Harness 吗？** 不会。它只注册了一条路由和一个插槽组件，两者都归插件所有。卸载后 Harness 与原来完全一致——核心没有任何改动。
+
+**运行成本如何？** 每个打开的标签页每分钟一次很小的本地 HTTP 请求，且只在侧边栏展开时发生。mock 模式完全不请求服务商。
+
+**为什么自定义服务商显示 DeepSeek 余额？** 未知路由会刻意回退到 DeepSeek，而不是让胶囊报错。请带上路由 id 提交 issue，即可补充映射。
+
+**headless/CLI 会话能用吗？** 胶囊是 Web 侧边栏功能；只要 profile 挂载了 Web 服务器，宿主路由在任何 profile 下都可用，但没有 Web UI 就没有胶囊可渲染。
 
 ## 许可证
 

@@ -15,6 +15,44 @@ The chip is **provider-aware**: it reads the active session's selected model and
   <img src="assets/providers.png" alt="The balance chip rendered for DeepSeek, OpenRouter, Moonshot/Kimi, Zhipu/GLM, and MiniMax" width="720">
 </p>
 
+## Contents
+
+- [Why dsh-balance?](#why-dsh-balance)
+- [Lightweight by design](#lightweight-by-design)
+- [Highlights](#highlights)
+- [Screenshots](#screenshots)
+- [Supported providers](#supported-providers)
+- [Install](#install)
+- [Configuration](#configuration)
+- [Preview without an account (mock mode)](#preview-without-an-account-mock-mode)
+- [How it works](#how-it-works)
+- [Development](#development)
+- [Troubleshooting](#troubleshooting)
+- [FAQ](#faq)
+- [License](#license)
+
+## Why dsh-balance?
+
+- **Provider-aware, not DeepSeek-only.** It follows the **active model's provider** across DeepSeek, OpenRouter, Moonshot/Kimi, Zhipu/GLM, and MiniMax — the chip changes the moment you switch models.
+- **The smallest thing that does the job.** No settings panel, no cost projection, no extra services. One route, one chip, ~11 kB gzipped.
+- **Zero core interference.** An out-of-tree package that registers into a declared slot. Nothing in the Harness source is patched or forked.
+
+## Lightweight by design
+
+`dsh-balance` is deliberately minimal, and it adds no machinery to the Harness:
+
+| | |
+|---|---|
+| **Runtime dependencies** | **none** — `dependencies: {}`; the only imports are `@deepseek-ai/*` platform modules and React, all supplied by the running Harness as optional peers |
+| **Bundle size** | host half **~8 kB** (3.1 kB gzip) + browser half **~23 kB** (8.1 kB gzip) → **~11 kB gzip combined** |
+| **Harness surface** | **one** exact route (`GET /plugins/balance`) and **one** component in the declared `sidebar.footer.action` slot |
+| **Core patches** | **none** — no forked files and no core CSS patch; the plugin styles only its own footer row from its own DOM anchor |
+| **Background work** | none — no database, no worker, no telemetry, no global state; a single `setInterval` per chip, cleared on unmount |
+| **Lifecycle** | the route is registered through `ctx.effect`, so it unwinds on unload; model-directory subscriptions unsubscribe; removing the plugin leaves nothing behind |
+| **Failure isolation** | a missing key or an upstream error degrades to a muted pill — it never blocks a session or the UI |
+
+> **Nothing to configure, nothing to tear down.** Install it and the only change is one row in the sidebar foot. Uninstall it and the Harness is exactly as it was.
+
 ## Highlights
 
 - **One chip, five providers.** DeepSeek, OpenRouter, Moonshot/Kimi, Zhipu/GLM (Z.ai), and MiniMax — each with its own brand mark, currency, and tooltip breakdown.
@@ -65,7 +103,9 @@ The mapping is deliberately narrow: a route the plugin does not recognize (inclu
 
 ## Install
 
-Requirements: a working DeepSeek Harness install (`dsh web`) and Node.js ≥ 22.18.
+Requirements: a DeepSeek Harness install with the web profile (`dsh web`) and Node.js ≥ 22.18.
+
+> The plugin is self-contained: it needs no extra services, no configuration file, and no core patch. Installation adds one dependency and one sidebar row.
 
 ### From npm
 
@@ -183,6 +223,18 @@ The `@deepseek-ai/*` platform packages are **optional peer dependencies** suppli
 | Chip missing after renaming the package | The client-module id is the package name; make sure the profile patch row's `name` matches `package.json`, then restart `dsh web`. |
 | Chip missing in the collapsed rail | Expected — the 56px rail has no room beside the gear. |
 | Upstream `401`/`403` on Moonshot or Zhipu | The key belongs to the other regional host; the plugin already tries the mirror, so a persistent error means the key is invalid on both. |
+
+## FAQ
+
+**Does the browser ever see my API key?** No. The host half resolves the credential through the Harness credentials seam and calls the provider; the browser only receives a normalized balance.
+
+**Will it break the Harness if I remove it?** No. It registers one route and one slot component, both owned by the plugin. Uninstall it and the Harness is exactly as it was — nothing in the core is modified.
+
+**What does it cost to run?** One small local HTTP request per minute per open tab, and only while the sidebar is wide. Mock mode makes no provider requests at all.
+
+**Why does a custom provider show the DeepSeek balance?** Unknown routes deliberately fall back to DeepSeek instead of failing the chip. Open an issue with the route id and it can be added.
+
+**Does it work with a headless/CLI session?** The chip is a web-sidebar feature; the host route works in any profile that mounts the web server, but there is no chip to render without the web UI.
 
 ## License
 
