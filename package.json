@@ -45,6 +45,7 @@
     "tsdown.config.ts",
     "README.md",
     "README.zh.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "exports": {

@@ -1,6 +1,7 @@
 # dsh-balance
 
 [![npm 包](https://img.shields.io/badge/npm-%40andrecgoncalves%2Fdsh--balance-cb3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/@andrecgoncalves/dsh-balance)
+[![GitHub 发布](https://img.shields.io/github/v/release/andregoncalves/dsh-balance?sort=semver&color=4D6BFE)](https://github.com/andregoncalves/dsh-balance/releases)
 [![许可证：MIT](https://img.shields.io/badge/license-MIT-3da639.svg)](LICENSE)
 [![node >= 22.18](https://img.shields.io/badge/node-%E2%89%A5%2022.18-43853d?logo=node.js&logoColor=white)](https://nodejs.org)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE)](https://github.com/deepseek-ai/deepseek-harness)
@@ -32,6 +33,7 @@
 - [开发](#开发)
 - [故障排查](#故障排查)
 - [常见问答](#常见问答)
+- [更新日志](#更新日志)
 - [许可证](#许可证)
 
 ## 为什么选择 dsh-balance？
@@ -274,6 +276,10 @@ pnpm run verify    # 在桩模块表上执行客户端产物并校验契约
 **为什么自定义服务商显示 DeepSeek 余额？** 未知路由会刻意回退到 DeepSeek，而不是让胶囊报错。请带上路由 id 提交 issue，即可补充映射。
 
 **headless/CLI 会话能用吗？** 胶囊是 Web 侧边栏功能；只要 profile 挂载了 Web 服务器，宿主路由在任何 profile 下都可用，但没有 Web UI 就没有胶囊可渲染。
+
+## 更新日志
+
+完整历史见 [CHANGELOG.md](CHANGELOG.md)。每次发布同时发布在 [GitHub Releases](https://github.com/andregoncalves/dsh-balance/releases) 与 [npm](https://www.npmjs.com/package/@andrecgoncalves/dsh-balance)。
 
 ## 许可证
 

@@ -1,6 +1,7 @@
 # dsh-balance
 
 [![npm package](https://img.shields.io/badge/npm-%40andrecgoncalves%2Fdsh--balance-cb3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/@andrecgoncalves/dsh-balance)
+[![GitHub release](https://img.shields.io/github/v/release/andregoncalves/dsh-balance?sort=semver&color=4D6BFE)](https://github.com/andregoncalves/dsh-balance/releases)
 [![license: MIT](https://img.shields.io/badge/license-MIT-3da639.svg)](LICENSE)
 [![node >= 22.18](https://img.shields.io/badge/node-%E2%89%A5%2022.18-43853d?logo=node.js&logoColor=white)](https://nodejs.org)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE)](https://github.com/deepseek-ai/deepseek-harness)
@@ -32,6 +33,7 @@ On DeepSeek the chip also tracks **peak / off-peak billing** — the status dot 
 - [Development](#development)
 - [Troubleshooting](#troubleshooting)
 - [FAQ](#faq)
+- [Changelog](#changelog)
 - [License](#license)
 
 ## Why dsh-balance?
@@ -277,6 +279,10 @@ The `@deepseek-ai/*` platform packages are **optional peer dependencies** suppli
 **Why does a custom provider show the DeepSeek balance?** Unknown routes deliberately fall back to DeepSeek instead of failing the chip. Open an issue with the route id and it can be added.
 
 **Does it work with a headless/CLI session?** The chip is a web-sidebar feature; the host route works in any profile that mounts the web server, but there is no chip to render without the web UI.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the full history. Every release is also published on [GitHub Releases](https://github.com/andregoncalves/dsh-balance/releases) and [npm](https://www.npmjs.com/package/@andrecgoncalves/dsh-balance).
 
 ## License
 
