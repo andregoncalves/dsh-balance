@@ -11,6 +11,8 @@ A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) plugin tha
 
 The chip is **provider-aware**: it reads the active session's selected model and shows the matching provider's balance, flipping automatically when you switch models.
 
+On DeepSeek the chip also tracks **peak / off-peak billing** — the status dot turns red inside DeepSeek's peak window and green off-peak, when requests cost half price. See [DeepSeek peak / off-peak hours](#deepseek-peak--off-peak-hours).
+
 <p align="center">
   <img src="assets/providers.png" alt="The balance chip rendered for DeepSeek, OpenRouter, Moonshot/Kimi, Zhipu/GLM, and MiniMax" width="720">
 </p>
@@ -58,6 +60,7 @@ The chip is **provider-aware**: it reads the active session's selected model and
 
 - **One chip, five providers.** DeepSeek, OpenRouter, Moonshot/Kimi, Zhipu/GLM (Z.ai), and MiniMax — each with its own brand mark, currency, and tooltip breakdown.
 - **Provider-aware.** Switching the active model switches the chip to that provider's balance immediately.
+- **Peak/off-peak aware on DeepSeek.** The status dot turns red during DeepSeek's peak billing window (Monday–Friday, Beijing 09:00–12:00 and 14:00–18:00) and green off-peak, when requests cost half price.
 - **Your key never reaches the browser.** The host half resolves the credential and calls the provider; the browser only ever sees a normalized balance.
 - **Live.** Auto-refreshes every 60 seconds, on click, when the session changes, and the moment the model's provider changes.
 - **Graceful.** A missing key or an upstream error becomes a muted `Balance —` pill with the reason in the tooltip — never a broken layout.
@@ -115,6 +118,16 @@ DeepSeek bills **off-peak requests at half the peak price**. The chip's status d
 | **Off-peak** — green dot | Every other hour, **including the whole weekend**, at 50% of the peak price |
 
 Source: [DeepSeek API — Models & Pricing](https://api-docs.deepseek.com/quick_start/pricing), footnote (1): *"Off-peak prices are half of the peak prices. Peak hours are Beijing time Monday to Friday 9:00–12:00 and 14:00–18:00 (all other times are off-peak)."*
+
+**DeepSeek is the only one of the five with a recurring peak/off-peak schedule.** The other providers have no time-of-day pricing windows, so their dot reflects balance/quota rather than a pricing window:
+
+| Provider | Time-of-day pricing? | What it uses instead |
+|---|---|---|
+| DeepSeek | **Yes** — Mon–Fri peak, off-peak at half price | — |
+| OpenRouter | No | Provider pass-through prices plus a platform fee |
+| Moonshot / Kimi | No | Flat token prices with cache discounts |
+| Zhipu / GLM (Z.ai) | No | List prices with occasional limited-time promotions |
+| MiniMax | No | Flat token prices (a permanent 50% off M3) plus an optional 1.5× priority tier |
 
 ## Install
 
