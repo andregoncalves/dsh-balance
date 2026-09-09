@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Every release is also published on [GitHub Releases](https://github.com/andregoncalves/dsh-balance/releases)
 and on [npm](https://www.npmjs.com/package/@andrecgoncalves/dsh-balance).
 
+## [0.4.1] — 2026-09-09
+
+### Fixed
+
+- Provider detection in the browser half. The chip read the active session's provider through a
+  `connection.api.sessions.models(...)` call that does not exist in DSH (the `connection` service is
+  a `ConnectionHandle` with `rpc`, not a session API), so the lookup always threw and the chip
+  silently fell back to the DeepSeek balance in every session, including OpenRouter, Moonshot, Zhipu,
+  and MiniMax sessions. It now reads `ctx.modelDirectories.directoryFor(sessionId).store` — the same
+  shared state the composer's model seat writes — and keeps the model-directory subscription that
+  re-polls on a model switch. `scripts/verify-client.mjs` now asserts the resolved `kind` for each
+  provider route, the OpenRouter regression included.
+
 ## [0.4.0] — 2026-09-09
 
 First public release.
@@ -27,4 +40,5 @@ First public release.
 - Bilingual README (English and Chinese), light/dark screenshots, and a `screenshots.json`
   declaration for plugin storefronts.
 
+[0.4.1]: https://github.com/andregoncalves/dsh-balance/releases/tag/v0.4.1
 [0.4.0]: https://github.com/andregoncalves/dsh-balance/releases/tag/v0.4.0

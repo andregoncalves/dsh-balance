@@ -238,7 +238,7 @@ DSH_BALANCE_MOCK=1 dsh web
 |---|---|---|
 | Bundle 层 | `cordis.patch.yml` | 由 `dsh.bundle` 声明；当 profile 列出本包时插入 `dsh-balance` 行，因此 `dsh plugin add` 无需手动修改补丁文件。 |
 | 宿主端（Node） | `src/index.ts` | 在宿主 Web 服务器上注册 `GET /plugins/balance?kind=…`。通过凭证接缝（以及新增服务商的启动环境）解析密钥，请求服务商，并转发归一化后的余额。**密钥不会经过网络传到浏览器。** |
-| 浏览器端 | `src/client/index.tsx` | 将 `BalanceChip` 组件注册到 `sidebar.footer.action` 插槽。通过会话 API 读取当前会话的模型服务商，映射为 `kind`，并每 60 秒、点击时、会话切换时、模型切换时轮询宿主路由。每种服务的返回数据由各自的渲染器整形。 |
+| 浏览器端 | `src/client/index.tsx` | 将 `BalanceChip` 组件注册到 `sidebar.footer.action` 插槽。从模型目录存储（`ctx.modelDirectories`）读取当前会话的模型服务商，映射为 `kind`，并每 60 秒、点击时、会话切换时、模型切换时轮询宿主路由。每种服务的返回数据由各自的渲染器整形。 |
 
 浏览器端产物由宿主的 client-module 流水线以 Web 外壳所需的 `window.__ModuleLoader__.load({ id, factory })` 闭包格式提供；`react` 与 `@deepseek-ai/*` 平台模块保持外部依赖，从浏览器冻结的模块表中解析。
 

@@ -8,8 +8,9 @@
  * (`GET /plugins/balance`), so the API key never reaches the browser.
  *
  * The chip is provider-aware: it reads the *active session's* selected model
- * through the model-directory RPC and asks the host for the balance of the
- * provider that model rides on. A model on the `openrouter` route shows the
+ * from the model-directory store (`ctx.modelDirectories`) and asks the host for
+ * the balance of the provider that model rides on. A model on the `openrouter`
+ * route shows the
  * OpenRouter remaining credits, a `moonshotai` route shows the Moonshot/Kimi
  * available balance, a `zai` route shows the Zhipu/GLM (Z.ai) account balance,
  * and a `minimax` route shows the MiniMax plan remaining. Any other route
@@ -34,7 +35,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { CSSProperties } from 'react'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type { IApiClient, SessionId } from '@deepseek-ai/dsh-api-remotes/client'
+import type { SessionId } from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only: pulls the sidebar SlotMap merge (the 'sidebar.footer.action'
 // declaration) so PropsRuntime<'sidebar.footer.action'> resolves.
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
@@ -42,8 +43,12 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 /** Cordis plugin name — unused here (the entry name comes from the loader row), kept for symmetry. */
 export const name = 'dsh-balance'
 
-/** Required services: the slot registry (provided by the client runtime) and the session API face. */
-export const inject = ['slots', 'connection']
+/**
+ * Required services: the slot registry (provided by the client runtime). The
+ * model-directory service (`ctx.modelDirectories`) is read lazily and treated
+ * as optional — without it the chip keeps its original DeepSeek behavior.
+ */
+export const inject = ['slots']
 
 /** How often the chip re-polls the balance (ms). */
 const REFRESH_INTERVAL_MS = 60_000
@@ -54,14 +59,11 @@ const BALANCE_ENDPOINT = '/plugins/balance'
 /** A provider whose balance the host can serve. */
 type BalanceKind = 'deepseek' | 'openrouter' | 'moonshot' | 'zhipu' | 'minimax'
 
-/** The part of the connection handle the chip needs: sessions model-directory reads. */
-type BalanceConnection = { api: Pick<IApiClient, 'sessions'> }
-
 /**
- * The minimal model-directory face the chip subscribes to so it re-polls the
- * moment the active session's model (and thus its provider) changes. This is a
- * structural match on the runtime's `ModelDirectoryResolver` / `ModelDirectory`
- * store, kept dependency-free.
+ * The minimal model-directory face the chip reads the active session's
+ * provider from and subscribes to so it re-polls the moment the model (and thus
+ * its provider) changes. This is a structural match on the runtime's
+ * `ModelDirectoryResolver` / `ModelDirectory` store, kept dependency-free.
  */
 interface ModelDirectoryStoreLike {
   getSnapshot(): { current?: { provider?: string } | null }
@@ -139,23 +141,27 @@ function kindForProvider(provider: string): BalanceKind {
 }
 
 /**
- * Resolve the balance kind for the active session's model. A missing session
- * (or any model-directory failure) falls back to DeepSeek, never failing the
- * chip.
- * @param connection - the session API face.
+ * Resolve the balance kind for the active session's model from the shared
+ * model-directory store — the same state the composer's model seat writes, so
+ * the chip follows the exact selection the session will use next. A missing
+ * session, an absent model-directory service, a directory that is not yet
+ * resolved (its `current` is `null` until the catalog loads), or any lookup
+ * failure falls back to DeepSeek, never failing the chip; the store
+ * subscription re-polls once `current` resolves or changes.
+ * @param modelDirectories - the session model-selection service, when composed.
  * @param sessionId - the active session, or undefined when none is current.
  * @returns the balance kind to query.
  */
-async function kindForSession(
-  connection: BalanceConnection,
+function kindForSession(
+  modelDirectories: ModelDirectoryServiceLike | undefined,
   sessionId: SessionId | undefined,
-): Promise<BalanceKind> {
-  if (sessionId === undefined) return 'deepseek'
+): BalanceKind {
+  if (sessionId === undefined || modelDirectories === undefined) return 'deepseek'
   try {
-    const { result } = await connection.api.sessions.models({ sessionId })
-    if (!result.ok) return 'deepseek'
-    return kindForProvider(result.value.current.provider)
+    const provider = modelDirectories.directoryFor(sessionId).store.getSnapshot().current?.provider
+    return provider === undefined ? 'deepseek' : kindForProvider(provider)
   } catch {
+    // e.g. an addressed subagent session with no directory, or a scope not yet bound.
     return 'deepseek'
   }
 }
@@ -479,19 +485,18 @@ function applySidebarFooterLayout(anchor: HTMLElement): void {
 
 /**
  * The balance chip component. Rendered by the slot runtime with the sidebar's
- * owner share (`wide`) plus the standard seat; `connection` is the session API
- * face the wrapper injects from the plugin body.
- * @param props - composed slot props plus the injected connection.
+ * owner share (`wide`) plus the standard seat; `getModelDirectories` is the
+ * lazy accessor the wrapper closes over, so the chip still resolves the service
+ * when the model-selection plugin activates after this one.
+ * @param props - composed slot props plus the injected model-directory accessor.
  * @returns the chip element, or null in the collapsed rail.
  */
 export function BalanceChip({
   wide,
-  connection,
-  modelDirectories,
+  getModelDirectories,
   useSessions,
 }: PropsRuntime<'sidebar.footer.action'> & {
-  connection: BalanceConnection
-  modelDirectories: ModelDirectoryServiceLike | undefined
+  getModelDirectories: () => ModelDirectoryServiceLike | undefined
 }) {
   const [state, setState] = useState<DisplayState>({ kind: 'loading' })
   const anchorRef = useRef<HTMLDivElement>(null)
@@ -500,14 +505,14 @@ export function BalanceChip({
   const refresh = useCallback(async () => {
     setState({ kind: 'loading' })
     try {
-      const kind = await kindForSession(connection, activeSession)
+      const kind = kindForSession(getModelDirectories(), activeSession)
       const res = await fetch(`${BALANCE_ENDPOINT}?kind=${kind}`, { headers: { accept: 'application/json' } })
       const data = (await res.json()) as BalanceResponse
       setState(data.ok ? displayState(data) : { kind: 'error', message: data.message ?? data.error ?? 'unavailable' })
     } catch {
       setState({ kind: 'error', message: 'Failed to load' })
     }
-  }, [connection, activeSession])
+  }, [getModelDirectories, activeSession])
 
   useEffect(() => {
     void refresh()
@@ -515,10 +520,12 @@ export function BalanceChip({
     return () => { window.clearInterval(timer) }
   }, [refresh])
 
-  // Subscribe to the active session's model-directory store so flipping the
-  // model in the dropdown (which changes the current provider) re-polls the
-  // balance immediately, without waiting for the next 60s tick.
+  // Subscribe to the active session's model-directory store so the chip
+  // re-polls as soon as the directory resolves and whenever flipping the model
+  // in the dropdown changes the current provider, without waiting for the next
+  // 60s tick.
   useEffect(() => {
+    const modelDirectories = getModelDirectories()
     if (modelDirectories === undefined || activeSession === undefined) return
     let directory: { store: ModelDirectoryStoreLike }
     try {
@@ -536,7 +543,7 @@ export function BalanceChip({
     }
     const unsubscribe = directory.store.subscribe(onModelChange)
     return () => { unsubscribe() }
-  }, [modelDirectories, activeSession, refresh])
+  }, [getModelDirectories, activeSession, refresh])
 
   useLayoutEffect(() => {
     if (!wide) return
@@ -582,23 +589,26 @@ export function BalanceChip({
 /**
  * Register the chip into the sidebar foot on the `sidebar.footer.action`
  * slot (declared by the ui-sidebar package; registration is an effect that
- * unwinds when this plugin unloads). The wrapper closes over the session API
- * face so the chip can read the active model's provider.
- * @param ctx - client plugin context carrying `slots` and `connection`.
+ * unwinds when this plugin unloads). The wrapper closes over the plugin scope
+ * so the chip can read the active model's provider from the model-directory
+ * service — resolved lazily, because that service is optional and may
+ * activate after this plugin.
+ * @param ctx - client plugin context carrying `slots`.
  */
 export function apply(ctx: ClientContext): void {
-  ctx.inject(['slots', 'connection'], (scope: ClientContext) => {
-    const connection = scope.get('connection') as BalanceConnection
-    // Optional: the model-directory service lets the chip re-poll the moment
-    // the active session's model (and thus its provider) changes. Absent in a
-    // composition without the model-selection plugin; the chip still works.
-    const modelDirectories = scope.get('modelDirectories') as ModelDirectoryServiceLike | undefined
+  ctx.inject(['slots'], (scope: ClientContext) => {
+    // Optional: the model-directory service lets the chip read the active
+    // session's provider and re-poll the moment the model changes. Absent in a
+    // composition without the model-selection plugin; the chip then keeps its
+    // original DeepSeek behavior.
+    const getModelDirectories = (): ModelDirectoryServiceLike | undefined =>
+      scope.get('modelDirectories') as ModelDirectoryServiceLike | undefined
     scope.slots.inject('sidebar.footer.action', () => scope.slots.register({
       name: 'sidebar.footer.action',
       id: 'balance',
       order: 0,
     }, (props) => (
-      <BalanceChip {...props} connection={connection} modelDirectories={modelDirectories} />
+      <BalanceChip {...props} getModelDirectories={getModelDirectories} />
     )))
   })
 }

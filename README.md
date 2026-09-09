@@ -241,7 +241,7 @@ Then add a route in **Settings → Models** for the provider you want to preview
 |---|---|---|
 | Bundle layer | `cordis.patch.yml` | Declared by `dsh.bundle`; inserts the `dsh-balance` row when a profile lists the package, so `dsh plugin add` needs no manual patch editing. |
 | Host (Node) | `src/index.ts` | Registers `GET /plugins/balance?kind=…` on the host web server. Resolves the key through the credentials seam (and the launch environment for the added providers), calls the provider, and relays a normalized balance. **The key never crosses the wire to the browser.** |
-| Browser | `src/client/index.tsx` | Registers the `BalanceChip` component into the `sidebar.footer.action` slot. Reads the active session's model provider through the session API, maps it to a `kind`, and polls the host route every 60s, on click, on session change, and on model switch. Each provider's payload is shaped by its own renderer. |
+| Browser | `src/client/index.tsx` | Registers the `BalanceChip` component into the `sidebar.footer.action` slot. Reads the active session's model provider from the model-directory store (`ctx.modelDirectories`), maps it to a `kind`, and polls the host route every 60s, on click, on session change, and on model switch. Each provider's payload is shaped by its own renderer. |
 
 The browser bundle is served by the host's client-module pipeline in the `window.__ModuleLoader__.load({ id, factory })` closure format the web shell consumes; `react` and the `@deepseek-ai/*` platform modules stay external and resolve from the browser's frozen module table.
 
