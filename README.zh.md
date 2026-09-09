@@ -1,6 +1,6 @@
 # dsh-balance
 
-[![npm 包](https://img.shields.io/badge/npm-%40andregoncalves%2Fdsh--balance-cb3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/@andregoncalves/dsh-balance)
+[![npm 包](https://img.shields.io/badge/npm-%40andrecgoncalves%2Fdsh--balance-cb3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/@andrecgoncalves/dsh-balance)
 [![许可证：MIT](https://img.shields.io/badge/license-MIT-3da639.svg)](LICENSE)
 [![node >= 22.18](https://img.shields.io/badge/node-%E2%89%A5%2022.18-43853d?logo=node.js&logoColor=white)](https://nodejs.org)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE)](https://github.com/deepseek-ai/deepseek-harness)
@@ -135,7 +135,7 @@ DeepSeek 的**空闲时段价格为高峰时段的一半**。胶囊通过状态�
 ### 从 npm 安装
 
 ```sh
-pnpm dsh plugin --profile web add @andregoncalves/dsh-balance
+pnpm dsh plugin --profile web add @andrecgoncalves/dsh-balance
 ```
 
 ### 从 GitHub 安装
@@ -168,7 +168,7 @@ pnpm dsh plugin --profile web add link:"$PWD"
 把该 bundle 加入 `~/.dsh/profiles/web/package.json`：
 
 ```json
-"dsh": { "profile": { "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "@andregoncalves/dsh-balance"] } }
+"dsh": { "profile": { "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "@andrecgoncalves/dsh-balance"] } }
 ```
 
 bundle 的补丁随后会插入该行。如果你更希望把它当作普通依赖，可以不走 `dsh.bundle`，而是自己在 `~/.dsh/profiles/web/cordis.patch.yml` 中加入：
@@ -176,7 +176,7 @@ bundle 的补丁随后会插入该行。如果你更希望把它当作普通依�
 ```yaml
 - insert:
     - id: dsh-balance
-      name: "@andregoncalves/dsh-balance"
+      name: "@andrecgoncalves/dsh-balance"
 ```
 
 两种方式中，`id` 都是插件内部的 Cordis 名称，保持 `dsh-balance` 不变；`name` 是已安装的包名。

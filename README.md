@@ -1,6 +1,6 @@
 # dsh-balance
 
-[![npm package](https://img.shields.io/badge/npm-%40andregoncalves%2Fdsh--balance-cb3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/@andregoncalves/dsh-balance)
+[![npm package](https://img.shields.io/badge/npm-%40andrecgoncalves%2Fdsh--balance-cb3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/@andrecgoncalves/dsh-balance)
 [![license: MIT](https://img.shields.io/badge/license-MIT-3da639.svg)](LICENSE)
 [![node >= 22.18](https://img.shields.io/badge/node-%E2%89%A5%2022.18-43853d?logo=node.js&logoColor=white)](https://nodejs.org)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE)](https://github.com/deepseek-ai/deepseek-harness)
@@ -138,7 +138,7 @@ Requirements: a DeepSeek Harness install with the web profile (`dsh web`) and No
 ### From npm
 
 ```sh
-pnpm dsh plugin --profile web add @andregoncalves/dsh-balance
+pnpm dsh plugin --profile web add @andrecgoncalves/dsh-balance
 ```
 
 ### From GitHub
@@ -171,7 +171,7 @@ The package declares **`dsh.bundle`**, so `dsh plugin add` appends it to your pr
 Add the bundle to `~/.dsh/profiles/web/package.json`:
 
 ```json
-"dsh": { "profile": { "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "@andregoncalves/dsh-balance"] } }
+"dsh": { "profile": { "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "@andrecgoncalves/dsh-balance"] } }
 ```
 
 The bundle's patch then inserts the row. If you prefer a plain dependency instead, drop the `dsh.bundle` handling and add the row yourself to `~/.dsh/profiles/web/cordis.patch.yml`:
@@ -179,7 +179,7 @@ The bundle's patch then inserts the row. If you prefer a plain dependency instea
 ```yaml
 - insert:
     - id: dsh-balance
-      name: "@andregoncalves/dsh-balance"
+      name: "@andrecgoncalves/dsh-balance"
 ```
 
 Either way the `id` is the plugin's internal Cordis name and stays `dsh-balance`; the `name` is the installed package.
