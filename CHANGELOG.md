@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Every release is also published on [GitHub Releases](https://github.com/andregoncalves/dsh-balance/releases)
 and on [npm](https://www.npmjs.com/package/@andrecgoncalves/dsh-balance).
 
-## [0.4.2] — 2026-09-19
+## [0.4.2] — 2026-09-28
 
 ### Fixed
 
@@ -20,6 +20,15 @@ and on [npm](https://www.npmjs.com/package/@andrecgoncalves/dsh-balance).
   the open Session from main-view retention (`retainedBy.mainView`) — the same derivation
   `ui-session` and `DocumentTitle` use. `scripts/verify-client.mjs` covers both snapshot shapes, the
   count-not-boolean case, and the empty and no-retention fallbacks.
+- The balance chip no longer falls back to the DeepSeek balance on the modlens vision plugin's
+  synthetic wrapper routes. modlens registers `modlens-<upstream>` (and the legacy
+  `deepseek-modlens`) so a text-only model can accept pasted images, and those routes bill the
+  upstream provider's account; `kindForProvider` knew only the bare catalog names, so every
+  `modlens-*` route fell through to DeepSeek, and an OpenRouter session showed a
+  missing-`DEEPSEEK_API_KEY` error instead of the credits it was spending. `unwrapModlensProvider`
+  strips the wrapper prefix before matching. `test/kind-for-provider.test.mjs` asserts the mapping
+  against the built `lib/client.js` — the artifact the browser loads — and runs in CI after the
+  build, so a source-only fix cannot pass it.
 
 ## [0.4.1] — 2026-09-09
 
