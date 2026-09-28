@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Every release is also published on [GitHub Releases](https://github.com/andregoncalves/dsh-balance/releases)
 and on [npm](https://www.npmjs.com/package/@andrecgoncalves/dsh-balance).
 
+## [0.4.3] — 2026-09-28
+
+### Fixed
+
+- The chip no longer overlaps the sidebar's account row. The sidebar footer is now two
+  stacked full-width seats — the `sidebar.footer.action` slot, then the seat holding the
+  account launcher ("Signed in to DeepSeek") and the Settings trigger — where the older
+  foot was a single row of "actions, then Settings". The rescue in `applySidebarFooterLayout`
+  still assumed the old shape and gave the action seat `flex: 1`, which sized the account
+  seat to its **min-content** width; its label is laid out with `overflow: hidden` and a
+  fixed text box, so it painted straight under the chip instead of truncating.
+- The chip now takes exactly the width its own content needs — `width: max-content` with
+  `flex: 0 0 auto` on its seat — so it never claims a share of the row's free space, and
+  every remaining pixel goes to the account label, which is the seat that yields
+  (`flex: 1 1 auto; min-width: 0`) and truncates with an ellipsis only when it must.
+- The chip keeps its amount at every sidebar width. An intermediate revision gave the chip a
+  compact mark-and-dot form for narrow footers, judged by whether dropping the amount would
+  let the account label fit — but that traded away the balance (the plugin's entire reason to
+  exist) to protect a label the core app already truncates with an ellipsis, and it hid the
+  number in the app's default window. The footer is now strictly one-way: the chip takes its
+  own content width and never yields it, and only the account label truncates. The dot keeps
+  its provider meaning and the tooltip keeps the full breakdown.
+- The chip now sits on the account row's line instead of a few pixels above it. Its
+  `4px auto 6px 0` margin was left over from when it sat alone above the Settings seat and
+  needed optical separation; now that it is a flex sibling that the foot centres, those
+  margins offset it — the asymmetric pair held it above the row's centre. The chip
+  contributes no vertical margin and is 32px tall, the same box the account row presents
+  inside its own 4px `.triggerRow` margin, so the two seats centre on the same line rather
+  than merely sharing a text baseline.
+- `marginLeft: 'auto'` in the chip's style object never took effect: the later `margin`
+  shorthand overwrote it, because React writes style keys in object order. The chip's own
+  right-push margin is now spelled as a longhand inside the shorthand.
+- The rescue reverses the foot with `row` plus an explicit `order` instead of the physical
+  `row-reverse`, and it prefers the slot's own element over the plugin row when the sidebar
+  wraps the slot, so the layout no longer depends on which side of the slot the anchor sits.
+- The client bundle no longer declares the retired `@deepseek-ai/dsh-client-web-react`
+  platform package as an external. The shell does not seed that module into its frozen module
+  table, so an import of it would throw at load time; the package is not imported, and the
+  declaration was a latent trap as well as a violation of the upstream client-bundle purity
+  gate.
+
 ## [0.4.2] — 2026-09-28
 
 ### Fixed

@@ -471,16 +471,34 @@ function ProviderLogo({ provider, size = 14 }: { provider: BalanceKind; size?: n
   )
 }
 
+/**
+ * Flex order that places the chip after the Settings seat. The sidebar already
+ * lays the foot out in DOM order (actions, then Settings), so this only matters
+ * when an older sidebar renders the two seats the other way around.
+ */
+const CHIP_ORDER = 1
+
 /** Slim right-aligned chip. */
 const chipStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'flex-end',
   gap: 6,
-  marginLeft: 'auto',
+  // The chip is the row's fixed item: it takes exactly the width its own
+  // content asks for, so `max-content` stops the browser from sharing any free
+  // space with it and leaves every remaining pixel to the account label.
+  width: 'max-content',
+  // No vertical margin of its own. The foot centres its items, so a top or
+  // bottom margin here offsets the chip against the account row beside it: the
+  // old `4px auto 6px 0` — left over from when the chip sat alone above the
+  // Settings seat — held it 6px high. `0 auto` keeps horizontal auto-centering
+  // meaningful if the chip is ever laid out without `justify-content: flex-end`.
+  margin: '0 auto',
   padding: '0 12px',
-  height: 30,
-  margin: '4px 0 6px',
+  // The same box height as the account row inside its 4px `.triggerRow` margin,
+  // so the two seats present equal boxes and centre on the same line instead of
+  // merely sharing a text baseline.
+  height: 32,
   minWidth: 0,
   flexShrink: 0,
   boxSizing: 'border-box',
@@ -496,33 +514,157 @@ const chipStyle: CSSProperties = {
   overflow: 'hidden',
 }
 
+/** The amount text; the only part of the chip that yields width in a tight foot. */
+const amountStyle: CSSProperties = {
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+}
+
 /**
- * The sidebar core normally stacks footer actions above Settings. This helper
- * mirrors the one-row layout (Settings left, actions right) from the plugin's
- * own DOM anchor, so no core DSH CSS patch is required.
+ * The status dot. It keeps one size in every state: the chip is never asked to
+ * give up its content, so there is no second, mark-and-dot form for it to
+ * resize into.
  */
-function applySidebarFooterLayout(anchor: HTMLElement): void {
-  const outlet = anchor.closest<HTMLElement>('[data-slot="sidebar.footer.action"]')
-  const actions = outlet?.parentElement
-  const foot = actions?.parentElement
-  const settings = actions?.nextElementSibling
-  if (outlet !== null && outlet !== undefined) outlet.style.display = 'contents'
-  if (actions !== undefined && actions !== null) {
-    actions.style.flex = '1'
+const dotBaseStyle: CSSProperties = {
+  flex: 'none',
+  width: 8,
+  height: 8,
+  borderRadius: '50%',
+}
+
+/** Live geometry of the sidebar foot, handed back by {@link applySidebarFooterLayout}. */
+export interface SidebarFooterLayout {
+  /** The foot row that holds the two seats, when the expected structure was found. */
+  readonly foot: HTMLElement | undefined
+  /** The slot's own element. */
+  readonly outlet: HTMLElement | undefined
+  /** The action column the sidebar renders around the slot. */
+  readonly actions: HTMLElement | undefined
+  /** The seat holding the account launcher and the Settings trigger. */
+  readonly settings: HTMLElement | undefined
+}
+
+/**
+ * Write the flex policy and hand back the elements that carry it, with no
+ * traversal of its own. Kept separate from {@link applySidebarFooterLayout} so
+ * the policy — which seat yields — is testable without a DOM.
+ *
+ * The chip's seat holds the row's only fixed-size item, so it takes exactly the
+ * chip's own content width and nothing else: the balance is the reason this
+ * plugin exists and is never traded away. The account/Settings seat takes every
+ * remaining pixel and is the only one allowed to shrink, which its own label
+ * already does with an ellipsis. A sidebar narrow enough to squeeze the label
+ * therefore clips *it*, leaving the amount readable.
+ * @param layout - the elements the rescue found, any of them absent.
+ * @returns the same elements, for the caller's cleanup bookkeeping.
+ */
+export function applyFooterFlex(layout: {
+  foot: HTMLElement | undefined
+  outlet: HTMLElement | undefined
+  actions: HTMLElement | undefined
+  settings: HTMLElement | undefined
+}): SidebarFooterLayout {
+  const { foot, outlet, actions, settings } = layout
+
+  if (outlet !== undefined) outlet.style.display = 'contents'
+
+  if (foot !== undefined) {
+    foot.style.display = 'flex'
+    foot.style.flexDirection = 'row'
+    foot.style.alignItems = 'center'
+  }
+
+  if (actions !== undefined) {
+    // The chip's seat is a fixed-size item: it claims exactly the chip's own
+    // content width and never a share of the row's free space, so everything
+    // left over belongs to the account label.
+    actions.style.flex = '0 0 auto'
+    actions.style.flexShrink = '0'
     actions.style.minWidth = '0'
     actions.style.width = 'auto'
     actions.style.display = 'flex'
     actions.style.justifyContent = 'flex-end'
+    if (actions.style.order === '') actions.style.order = String(CHIP_ORDER)
   }
-  if (settings !== undefined && settings !== null) {
-    settings.style.flex = 'none'
+
+  if (settings !== undefined) {
+    // The seat takes the rest and, only once its own label runs out of room,
+    // shrinks — its label truncates instead of overflowing into the chip.
+    settings.style.flex = '1 1 auto'
     settings.style.minWidth = '0'
     settings.style.width = 'auto'
   }
-  if (foot !== undefined && foot !== null) {
-    foot.style.display = 'flex'
-    foot.style.flexDirection = 'row-reverse'
-    foot.style.alignItems = 'center'
+
+  return { foot, outlet, actions, settings }
+}
+
+/**
+ * Hand the footer row a layout the chip actually fits in.
+ *
+ * The sidebar renders the foot as a column of two full-width seats: the
+ * `sidebar.footer.action` slot, then the seat holding the account launcher and
+ * the Settings trigger. The account identity joined that second seat later, and
+ * it is a full-width row of its own — so an action that merely right-aligns
+ * itself inside the first seat sits *above* the identity, not beside it.
+ *
+ * This rescue turns the foot into one row and inverts which seat yields: the
+ * chip is small and fixed, while the Settings seat takes the rest and lets its
+ * own label truncate (its button and label already clip with an ellipsis).
+ * Without that inversion the seat is sized to its min-content, so the account
+ * label paints straight over the chip.
+ *
+ * Selector-free by design: the two structural levels around the slot are
+ * addressable through `closest` and `nextElementSibling`, and the class names
+ * are hashed per release.
+ * @param anchor - the plugin row's own element, rendered with `display: contents`.
+ * @returns the elements it styled, for the caller's cleanup bookkeeping.
+ */
+export function applySidebarFooterLayout(anchor: HTMLElement): SidebarFooterLayout {
+  // `closest` never matches the node itself unless the selector does, so the
+  // two arms stay distinct: the slot element when the sidebar wraps the slot
+  // (current releases), otherwise the anchor (older ones).
+  const outlet = anchor.closest<HTMLElement>('[data-slot="sidebar.footer.action"]') ?? anchor
+  const actions = outlet.parentElement ?? undefined
+  const foot = actions?.parentElement ?? undefined
+  const next = actions?.nextElementSibling
+  const settings = next === null || next === undefined ? undefined : next as HTMLElement
+  return applyFooterFlex({ foot, outlet, actions, settings })
+}
+
+/**
+ * The inline styles the rescue writes, paired with the element they were
+ * written on. The sidebar's elements outlive this plugin's row — only the row
+ * itself unmounts — so the same attribute that marks them for cleanup is what
+ * lets an uninstall leave the sidebar exactly as it found it.
+ */
+interface FooterStyleOwner {
+  readonly element: HTMLElement
+  readonly properties: readonly string[]
+}
+
+/** Mark every element the rescue styled, so it can be restored on unmount. */
+function collectStyleOwners(layout: SidebarFooterLayout): FooterStyleOwner[] {
+  const owners: FooterStyleOwner[] = []
+  const claimed = new Set<HTMLElement>()
+  const claim = (element: HTMLElement | undefined, properties: readonly string[]): void => {
+    if (element === undefined || claimed.has(element)) return
+    claimed.add(element)
+    owners.push({ element, properties })
+  }
+  claim(layout.outlet, ['display'])
+  claim(layout.actions, ['flex', 'flexShrink', 'minWidth', 'width', 'display', 'justifyContent', 'order'])
+  claim(layout.settings, ['flex', 'minWidth', 'width'])
+  claim(layout.foot, ['display', 'flexDirection', 'alignItems'])
+  return owners
+}
+
+/** Undo the rescue's inline styles, restoring the sidebar's own layout. */
+function clearFooterStyles(owners: readonly FooterStyleOwner[]): void {
+  for (const { element, properties } of owners) {
+    for (const property of properties) element.style.removeProperty(
+      property.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`),
+    )
   }
 }
 
@@ -543,6 +685,7 @@ export function BalanceChip({
 }) {
   const [state, setState] = useState<DisplayState>({ kind: 'loading' })
   const anchorRef = useRef<HTMLDivElement>(null)
+  const styleOwnersRef = useRef<readonly FooterStyleOwner[]>([])
   const activeSession = useSessions(
     (snapshot) => currentSessionId(snapshot as unknown as SessionsSnapshotLike),
   )
@@ -590,10 +733,18 @@ export function BalanceChip({
     return () => { unsubscribe() }
   }, [getModelDirectories, activeSession, refresh])
 
+  // Hand the foot a row the chip fits in. The chip takes just its content width
+  // and keeps its amount at every sidebar width; the account label is the thing
+  // that yields, which it already does with an ellipsis.
   useLayoutEffect(() => {
     if (!wide) return
     const anchor = anchorRef.current
-    if (anchor !== null) applySidebarFooterLayout(anchor)
+    if (anchor === null) return
+    styleOwnersRef.current = collectStyleOwners(applySidebarFooterLayout(anchor))
+    return () => {
+      clearFooterStyles(styleOwnersRef.current)
+      styleOwnersRef.current = []
+    }
   }, [wide])
 
   // The collapsed 56px rail has no room beside the settings gear; the chip
@@ -604,27 +755,19 @@ export function BalanceChip({
     <div ref={anchorRef} style={{ display: 'contents' }}>
       {state.kind === 'loading' ? (
         <div style={chipStyle} title="Loading balance…" aria-busy="true">
-          <span>Loading…</span>
+          <span style={amountStyle}>Loading…</span>
         </div>
       ) : state.kind === 'error' ? (
         <button type="button" style={chipStyle} title={`Balance unavailable — ${state.message} (click to retry)`} onClick={() => { void refresh() }}>
-          <span>Balance —</span>
+          <span style={amountStyle}>Balance —</span>
         </button>
       ) : (
         <button type="button" style={chipStyle} title={`${state.title} (click to refresh)`} onClick={() => { void refresh() }}>
           <ProviderLogo provider={state.provider} />
-          <span>{state.symbol}{state.total}</span>
-          <span
-            role="img"
-            aria-label={state.title}
-            style={{
-              flex: 'none',
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: state.dotColor,
-            }}
-          />
+          {/* The amount is the point of the chip, so it is never dropped for the
+              account label's sake. */}
+          <span style={amountStyle}>{state.symbol}{state.total}</span>
+          <span role="img" aria-label={state.title} style={{ ...dotBaseStyle, background: state.dotColor }} />
         </button>
       )}
     </div>

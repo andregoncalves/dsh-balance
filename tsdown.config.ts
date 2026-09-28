@@ -19,7 +19,12 @@ const PACKAGE_ID = (JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
 ) as { name: string }).name
 
-/** The DSH browser platform modules (mirror of packages/client/web/src/platform.ts). */
+/**
+ * The DSH browser platform modules (mirror of packages/client/web/src/platform.ts).
+ * The retired `@deepseek-ai/dsh-client-web-react` package is deliberately absent:
+ * the shell no longer seeds it into the frozen module table, so treating it as an
+ * external would ship a bundle whose import throws rather than resolves.
+ */
 const PLATFORM_MODULES = [
   'react',
   'react/jsx-runtime',
@@ -27,7 +32,6 @@ const PLATFORM_MODULES = [
   'react-dom/client',
   '@deepseek-ai/cordis',
   '@deepseek-ai/dsh-client-ui-slots',
-  '@deepseek-ai/dsh-client-web-react',
   '@deepseek-ai/dsh-client-ui-primitives',
   '@deepseek-ai/dsh-client-ui-attachment',
   '@deepseek-ai/dsh-client-schema-form',

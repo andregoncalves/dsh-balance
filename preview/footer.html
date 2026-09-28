@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<meta charset="utf-8">
+<title>dsh-balance — sidebar footer preview</title>
+<style>
+  /* ── Design tokens (values from the app's light/dark palettes) ───────── */
+  [data-theme='light'] {
+    --dsw-alias-label-primary: #1b1c1e;
+    --dsw-alias-label-secondary: #6b6f76;
+    --dsw-alias-label-tertiary: #9aa0a6;
+    --dsw-alias-interactive-bg-hover: #f2f3f5;
+    --dsw-alias-bg-skeleton: #eceef1;
+    --dsw-alias-state-success-primary: #17a34a;
+    --dsw-alias-state-error-primary: #e5484d;
+    --dsw-specific-sidebar-fill: #ffffff;
+    --page-bg: #e9eaec;
+    --radius-md: 8px;
+  }
+  [data-theme='dark'] {
+    --dsw-alias-label-primary: #f2f3f5;
+    --dsw-alias-label-secondary: #a6abb3;
+    --dsw-alias-label-tertiary: #7d838b;
+    --dsw-alias-interactive-bg-hover: #2a2c30;
+    --dsw-alias-bg-skeleton: #2f3237;
+    --dsw-alias-state-success-primary: #35c46a;
+    --dsw-alias-state-error-primary: #f2555a;
+    --dsw-specific-sidebar-fill: #1b1c1e;
+    --page-bg: #101113;
+    --radius-md: 8px;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page-bg); color: var(--dsw-alias-label-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+  }
+  .page { display: flex; gap: 28px; padding: 28px; align-items: flex-start; flex-wrap: wrap; }
+  .controls { width: 260px; display: flex; flex-direction: column; gap: 14px; }
+  .controls h1 { font-size: 15px; margin: 0 0 2px; }
+  .controls p { margin: 0; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--dsw-alias-label-tertiary); }
+  input[type='range'] { width: 100%; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  button {
+    font: inherit; font-size: 12px; padding: 5px 9px; border-radius: 7px; cursor: pointer;
+    border: 1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 18%, transparent);
+    background: var(--dsw-specific-sidebar-fill); color: var(--dsw-alias-label-primary);
+  }
+  button[aria-pressed='true'] { outline: 2px solid var(--dsw-alias-state-success-primary); }
+  .readout {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; line-height: 17px;
+    background: var(--dsw-specific-sidebar-fill); border-radius: 10px; padding: 10px 12px;
+    white-space: pre-wrap; color: var(--dsw-alias-label-secondary);
+  }
+  .readout b { color: var(--dsw-alias-label-primary); font-weight: 600; }
+
+  /* ── Sidebar container: verbatim rules from ui-sidebar SidebarRoot.module.css ── */
+  .root {
+    --dsh-sidebar-inline-padding: 12px;
+    display: flex;
+    flex-direction: column;
+    height: 420px;
+    padding: 6px var(--dsh-sidebar-inline-padding);
+    box-sizing: border-box;
+    background: var(--dsw-specific-sidebar-fill);
+    color: var(--dsw-alias-label-primary);
+    font-size: 14px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .16);
+  }
+  .stage {
+    position: absolute; bottom: 10px; left: 3px; right: 3px; padding: 3px;
+    outline: 1px dashed color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);
+    border-radius: 8px;
+  }
+  .fill { flex: 1; }
+  .placeholder { font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+  .root { position: relative; }
+
+  /* ── Foot: verbatim rules from SidebarRoot.module.css ── */
+  .footArea { flex: none; display: flex; flex-direction: column; }
+  .settingsArea, .footerActions { flex: none; min-width: 0; width: 100%; }
+  .footerActions { display: flex; }
+
+  /* ── Settings seat: verbatim rules from ui-settings-general ── */
+  .triggerRow {
+    position: relative; flex: none; display: flex; align-items: center; gap: 8px;
+    width: calc(100% + 4px); margin: 4px -2px;
+  }
+  .settingsTrigger {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; width: auto;
+    height: 42px; margin: 0; padding: 0 10px 0 8px; border: none; border-radius: var(--radius-md);
+    background: transparent; cursor: pointer; overflow: hidden; color: var(--dsw-alias-label-primary);
+    font-family: inherit; font-size: 14px; line-height: 22px; text-align: left;
+  }
+  .settingsTrigger:hover { background: var(--dsw-alias-interactive-bg-hover); }
+  .triggerLabel { overflow: hidden; white-space: nowrap; }
+
+  /* ── Account launcher: verbatim rules from ui-settings-account AccountMenu.module.css ── */
+  .account {
+    user-select: none; display: flex; align-items: center; width: 100%; height: 44px; gap: 8px;
+    padding: 6px; border: 0; border-radius: var(--radius-md); background: transparent;
+    color: var(--dsw-alias-label-primary); font: inherit; font-size: 14px; cursor: pointer;
+    overflow: hidden; text-align: left;
+  }
+  .account:hover { background: var(--dsw-alias-interactive-bg-hover); }
+  .avatar {
+    display: flex; align-items: center; justify-content: center; flex: none; width: 24px; height: 24px;
+    border-radius: 50%; background: var(--dsw-alias-bg-skeleton); color: var(--dsw-alias-label-tertiary);
+  }
+  .accountLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── The chip: the plugin's own inline styles, as the bundle writes them ── */
+  .chip {
+    display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+    width: max-content;                     /* exact content width */
+    margin: 0 auto;                         /* no vertical margin: the foot centres it */
+    padding: 0 12px; height: 32px; min-width: 0; flex-shrink: 0;
+    border-radius: 12px; border: none; background: transparent; cursor: pointer;
+    color: var(--dsw-alias-label-secondary); font-family: inherit; font-size: 12px; line-height: 18px;
+    white-space: nowrap; overflow: hidden;
+  }
+  .amount { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+  .mark { flex-shrink: 0; display: block; }
+</style>
+
+<div class="page">
+  <div class="controls">
+    <h1>Sidebar footer preview</h1>
+    <p>Drag the sidebar width. The chip always takes its own content width; the account label gets the rest.</p>
+
+    <div class="field">
+      <label for="width">Sidebar width — <span id="widthOut">322</span>px</label>
+      <input id="width" type="range" min="264" max="420" value="322">
+    </div>
+
+    <div class="field">
+      <label>Presets</label>
+      <div class="presets" id="presets"></div>
+    </div>
+
+    <div class="field">
+      <label>Account label</label>
+      <div class="presets">
+        <button type="button" id="identity" aria-pressed="false">Short identity</button>
+        <button type="button" id="theme">Dark</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Policy</label>
+      <div class="presets">
+        <button type="button" id="policy" aria-pressed="true">Current policy</button>
+      </div>
+    </div>
+
+    <div class="readout" id="readout"></div>
+  </div>
+
+  <!-- The sidebar, reduced to what the footer needs. -->
+  <div class="root" id="sidebar">
+    <div class="fill"><span class="placeholder">session list</span></div>
+
+    <!-- .footArea > (.footerActions with the sidebar.footer.action slot, then .settingsArea) -->
+    <div class="footArea" id="foot">
+      <div class="footerActions" id="footerActions">
+        <div data-slot="sidebar.footer.action" id="outlet">
+          <!-- the plugin row: display: contents -->
+          <div id="anchor" style="display: contents">
+            <button type="button" class="chip" id="chip" title="Off-peak · 50% of the peak price · Total $5.20 · Granted $5.00 · Topped up $0.20 (click to refresh)">
+              <svg class="mark" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 01-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 00-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 01-.465.137 9.597 9.597 0 00-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 001.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 011.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 01.415-.287.302.302 0 01.2.288.306.306 0 01-.31.307.303.303 0 01-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 01-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 01.016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 01-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z"/></svg>
+              <span class="amount" id="amount">$5.20</span>
+              <span role="img" aria-label="Off-peak" class="dot" style="background: var(--dsw-alias-state-success-primary)"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="settingsArea" id="settings">
+        <div class="triggerRow">
+          <button type="button" class="account" id="account" aria-label="Account menu">
+            <span class="avatar" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5.5" r="2.75"/><path d="M2.5 14a5.5 5.5 0 0 1 11 0z"/></svg>
+            </span>
+            <span class="accountLabel" id="accountLabel">Signed in to DeepSeek</span>
+          </button>
+          <button type="button" class="settingsTrigger" aria-label="Settings" style="flex: none; width: 36px; justify-content: center; padding: 0; height: 36px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+              <circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.7 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.09a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // The plugin's policy, ported 1:1 from applyFooterFlex in src/client/index.tsx:
+  // the chip's seat is a fixed item at the chip's content width, the account
+  // seat takes the rest and is the only one allowed to shrink.
+  const CHIP_ORDER = 1
+  const foot = document.getElementById('foot')
+  const outlet = document.getElementById('outlet')
+  const actions = document.getElementById('footerActions')
+  const settings = document.getElementById('settings')
+  const chip = document.getElementById('chip')
+  const sidebar = document.getElementById('sidebar')
+  const widthInput = document.getElementById('width')
+  const readout = document.getElementById('readout')
+
+  let legacy = false
+  let shortIdentity = false
+
+  const boxWidth = (element) => element.getBoundingClientRect().width
+
+  function applyFooterFlex() {
+    if (legacy) {
+      // The old rescue, kept for comparison: the action seat takes the free
+      // space, the account seat is pinned at its min-content.
+      foot.style.display = 'flex'
+      foot.style.flexDirection = 'row-reverse'
+      foot.style.alignItems = 'center'
+      actions.style.cssText = 'flex: 1; min-width: 0; width: auto; display: flex; justify-content: flex-end;'
+      settings.style.cssText = 'flex: none; min-width: 0; width: auto;'
+      outlet.style.display = 'contents'
+      return
+    }
+    outlet.style.display = 'contents'
+    foot.style.display = 'flex'
+    foot.style.flexDirection = 'row'
+    foot.style.alignItems = 'center'
+    actions.style.cssText = 'flex: 0 0 auto; flex-shrink: 0; min-width: 0; width: auto; display: flex; justify-content: flex-end; order: ' + CHIP_ORDER + ';'
+    settings.style.cssText = 'flex: 1 1 auto; min-width: 0; width: auto;'
+  }
+
+  function render() {
+    const width = Number(widthInput.value)
+    sidebar.style.width = width + 'px'
+    document.getElementById('widthOut').textContent = String(width)
+    applyFooterFlex()
+
+    const seatWidth = boxWidth(settings)
+    const probe = document.createElement('span')
+    probe.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font:14px -apple-system,BlinkMacSystemFont,sans-serif'
+    probe.textContent = document.getElementById('accountLabel').textContent
+    settings.appendChild(probe)
+    const labelWanted = boxWidth(probe)
+    probe.remove()
+    const labelRoom = Math.max(0, seatWidth - 18 - 24 - 8 - 8 - 36)
+
+    const chipBox = chip.getBoundingClientRect()
+    const accountBox = document.getElementById('account').getBoundingClientRect()
+    const footBox = foot.getBoundingClientRect()
+    const chipCentre = chipBox.top + chipBox.height / 2 - footBox.top
+    const accountCentre = accountBox.top + accountBox.height / 2 - footBox.top
+
+    readout.innerHTML = [
+      'sidebar      <b>' + width + 'px</b>',
+      'chip         <b>' + boxWidth(actions).toFixed(1) + 'px</b>  (its own content — never yields)',
+      'account seat <b>' + seatWidth.toFixed(1) + 'px</b>',
+      'label room   <b>' + labelRoom.toFixed(1) + 'px</b> of ' + labelWanted.toFixed(1) + 'px needed',
+      '',
+      'label truncated : <b>' + (labelWanted > labelRoom + 1 ? 'yes (the label yields)' : 'no') + '</b>',
+      'chip amount     : <b>shown</b> — at every width',
+      '',
+      'chip centre     : <b>' + chipCentre.toFixed(1) + 'px</b>',
+      'account centre  : <b>' + accountCentre.toFixed(1) + 'px</b>',
+      'offset          : <b>' + (chipCentre - accountCentre).toFixed(1) + 'px</b>',
+      legacy ? 'policy          : <b>old (for comparison)</b>' : 'policy          : <b>measured</b>',
+    ].join('\n')
+  }
+
+  const PRESETS = [264, 280, 300, 322, 360, 420]
+  const presetBox = document.getElementById('presets')
+  for (const preset of PRESETS) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = preset + 'px'
+    button.addEventListener('click', () => { widthInput.value = String(preset); render() })
+    presetBox.appendChild(button)
+  }
+
+  widthInput.addEventListener('input', render)
+
+  document.getElementById('theme').addEventListener('click', (event) => {
+    const dark = document.documentElement.dataset.theme === 'dark'
+    document.documentElement.dataset.theme = dark ? 'light' : 'dark'
+    event.currentTarget.textContent = dark ? 'Dark' : 'Light'
+  })
+
+  document.getElementById('identity').addEventListener('click', (event) => {
+    shortIdentity = !shortIdentity
+    document.getElementById('accountLabel').textContent = shortIdentity ? 'Andre' : 'Signed in to DeepSeek'
+    document.getElementById('accountLabel').title = shortIdentity ? 'Andre' : 'Signed in to DeepSeek'
+    event.currentTarget.setAttribute('aria-pressed', String(shortIdentity))
+    render()
+  })
+
+  document.getElementById('policy').addEventListener('click', (event) => {
+    legacy = !legacy
+    event.currentTarget.setAttribute('aria-pressed', String(!legacy))
+    event.currentTarget.textContent = legacy ? 'Old policy (bug)' : 'Current policy'
+    render()
+  })
+
+  let rendering = false
+  const settle = () => {
+    if (rendering) return
+    rendering = true
+    try { render() } finally { rendering = false }
+  }
+  new ResizeObserver(settle).observe(foot)
+  settle()
+</script>
+</html>

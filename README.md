@@ -109,6 +109,7 @@ The mapping is deliberately narrow: a route the plugin does not recognize (inclu
 - **Tooltip** — the full breakdown (for example `Total $42.50 · Granted $5.00 · Topped up $37.50`).
 - **Click** — refresh now.
 - **Errors** — a muted `Balance —` pill; hover for the reason, click to retry.
+- **Narrow sidebars** — the chip takes exactly the width its own content needs and the account label beside it gets the rest. The chip never gives up its amount; the label truncates with an ellipsis instead.
 - The collapsed 56px sidebar rail hides the chip — there is no room beside the gear.
 
 ### DeepSeek peak / off-peak hours
