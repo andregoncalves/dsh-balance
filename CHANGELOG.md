@@ -18,8 +18,8 @@ and on [npm](https://www.npmjs.com/package/@andrecgoncalves/dsh-balance).
   "Balance —" error pill in every session — including OpenRouter sessions — regardless of the
   selected model. `currentSessionId` reads alpha.1's `current` when present, and otherwise derives
   the open Session from main-view retention (`retainedBy.mainView`) — the same derivation
-  `ui-session` and `DocumentTitle` use. `test/current-session.test.mjs` covers both snapshot shapes,
-  the empty and unresolved cases, and the precedence of `current`.
+  `ui-session` and `DocumentTitle` use. `scripts/verify-client.mjs` covers both snapshot shapes, the
+  count-not-boolean case, and the empty and no-retention fallbacks.
 
 ## [0.4.1] — 2026-09-09
 
